@@ -25,17 +25,27 @@ const (
         NightMessage = "Sorry, de parkeerplaats is ’s nachts gesloten"
 )
 
+// debug constants
+const (
+        debugOffset = -5
+)
+
 func main() {
-    time := time.Now()
+    // debug
+    now := time.Now().Add(time.Hour * debugOffset)
+    fmt.Println(now.Clock())
+
+    // prod
+    //now := time.Now()
 
     switch {
-    case time.Hour() < MorningThreshold:
+    case now.Hour() < MorningThreshold:
         fmt.Println(NightMessage)
-    case time.Hour() < AfternoonThreshold:
+    case now.Hour() < AfternoonThreshold:
         fmt.Println(MorningMessage)
-    case time.Hour() < EveningThreshold:
+    case now.Hour() < EveningThreshold:
         fmt.Println(AfternoonMessage)
-    case time.Hour() < NightThreshold:
+    case now.Hour() < NightThreshold:
         fmt.Println(EveningMessage)
     default:
         fmt.Println(NightMessage)
