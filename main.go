@@ -26,17 +26,23 @@ const (
 )
 
 // debug constants
+/*
 const (
-        debugOffset = -5
+        debugOffset = 6
 )
+*/
 
 func main() {
     // debug
+    /* 
     now := time.Now().Add(time.Hour * debugOffset)
     fmt.Println(now.Clock())
+    */
 
-    // prod
-    //now := time.Now()
+    // production
+    ///*
+    now := time.Now()
+    //*/
 
     switch {
     case now.Hour() < MorningThreshold:
