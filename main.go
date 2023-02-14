@@ -113,12 +113,14 @@ func main() {
 
     // read license plates
     var (licensePlate string; err error)
-    for err != nil {
+    for err == nil {
         if interactive {fmt.Print(InteractivePrompt)}
-        licensePlate, err = reader.ReadString('\n')
+        var licensePlateBytes []byte;
+        licensePlateBytes ,_, err = reader.ReadLine()
+        licensePlate = string(licensePlateBytes)
         
         // check if interactive mode exit is requested
-        if interactive&&(licensePlate == ">EXIT") {
+        if interactive&&(licensePlate == ">EXIT") || err != nil {
             break
         }
         // check if license plate is in set
