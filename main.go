@@ -2,8 +2,11 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"time"
 
 	Set "github.com/deckarep/golang-set/v2"
@@ -11,25 +14,27 @@ import (
 
 // time constants
 const (
-        MorningThreshold = 7
-        AfternoonThreshold = 12
-        EveningThreshold = 18
-        NightThreshold = 23
+        MorningThreshold    = 7
+        AfternoonThreshold  = 12
+        EveningThreshold    = 18
+        NightThreshold      = 23
 )
 
 // message constants
 const (
-        DefaultMessage = "! Welkom bij Fonteyn Vakantieparken"
-        MorningPrefix = "Goedemorgen"
-        AfternoonPrefix = "Goedemiddag"
-        EveningPrefix = "Goedenavond"
-        MorningMessage = MorningPrefix + DefaultMessage
-        AfternoonMessage = AfternoonPrefix + DefaultMessage
-        EveningMessage = EveningPrefix + DefaultMessage
-        NightMessage = "Sorry, de parkeerplaats is ’s nachts gesloten"
+        DefaultMessage      = "! Welkom bij Fonteyn Vakantieparken"
+        MorningPrefix       = "Goedemorgen"
+        AfternoonPrefix     = "Goedemiddag"
+        EveningPrefix       = "Goedenavond"
+        MorningMessage      = MorningPrefix + DefaultMessage
+        AfternoonMessage    = AfternoonPrefix + DefaultMessage
+        EveningMessage      = EveningPrefix + DefaultMessage
+        NightMessage        = "Sorry, de parkeerplaats is ’s nachts gesloten"
+        InteractivePrompt   = "Kentekenplaat (of '>EXIT' om af te sluiten): "
+        AccessDeniedMessage = "U heeft helaas geen toegang tot het parkeerterrein"
 )
 
-//license plates
+// license plates
 type TLicensePlates Set.Set[string]
 
 // debug constants
@@ -49,53 +54,92 @@ func debugLicensePlates() []string {
     }
 }
 
+//flag variables
+var (
+    debug bool
+    debugTime time.Time
+    interactive bool
+)
 
+func init() {
+    // parse flags
+    flag.BoolVar(&debug,"-debug", false, "Toggles debug mode")
+    flag.BoolVar(&debug, "d", false, "Toggles debug mode (shorthand)")
 
+    flag.TextVar(&debugTime,"-debugOffset", time.Time{}, "debug offset")
+    flag.TextVar(&debugTime,"o", time.Time{}, "debug offset (shorthand)")
+
+    flag.BoolVar(&interactive,"-interactive", false, "Toggles interactive mode")
+    flag.BoolVar(&interactive, "i", false, "Toggles interactive mode (shorthand)")
+
+    flag.Parse()
+}
 
 
 
 func main() {
-    var (
-    // TEST: set time
-    //now = time.Now().Add(time.Hour * debugOffset)
-    // PROD: get time
-    now = time.Now()
+    // prepare exit code
+    exitCode := 0
+    defer func() {os.Exit(exitCode)}()
 
-    reader = bufio.NewReader(os.Stdin)
-    licensePlates TLicensePlates
+    // parse variables based on flags
+    var (
+        
+        now = func() time.Time {
+            if debug {
+                return debugTime
+            } else {
+                return time.Now()
+            }
+        }()
+
+        reader = func() *bufio.Reader{
+            if interactive {
+                return bufio.NewReader(os.Stdin)
+            } else {
+                return bufio.NewReader(strings.NewReader(strings.Join(flag.Args(), "\n")))
+            }
+        }()
+
+        licensePlates = func() TLicensePlates {
+            if debug {
+                return Set.NewSet(debugLicensePlates()...)
+            } else {
+                // PROD: get license plates from database
+                return Set.NewSet(debugLicensePlates()...)
+            }
+        }()
     )
 
-
-    // PROD: get license plates from database
-    //licensePlates = 
-    
-    // TEST: hard-coded license plates
-    licensePlates = Set.NewSet(debugLicensePlates()...)
-
-    var licensePlate string
-    // PROD: get license plate from camera
-
-    // TEST: input license plate from console
-    fmt.Print("License plate: ")
-    for err := *new(error); err != nil; licensePlate, err = reader.ReadString('\n') {
-        fmt.Print("License plate: ")
-    }
-
-    // check if license plate is in set
-    if licensePlates.Contains(licensePlate) {
-        switch {
-        case now.Hour() < MorningThreshold:
-            fmt.Println(NightMessage)
-        case now.Hour() < AfternoonThreshold:
-            fmt.Println(MorningMessage)
-        case now.Hour() < EveningThreshold:
-            fmt.Println(AfternoonMessage)
-        case now.Hour() < NightThreshold:
-            fmt.Println(EveningMessage)
-        default:
-            fmt.Println(NightMessage)
+    // read license plates
+    var (licensePlate string; err error)
+    for err != nil {
+        if interactive {fmt.Print(InteractivePrompt)}
+        licensePlate, err = reader.ReadString('\n')
+        
+        // check if interactive mode exit is requested
+        if interactive&&(licensePlate == ">EXIT") {
+            break
         }
-    } else {
-        fmt.Println("U heeft helaas geen toegang tot het parkeerterrein")
+        // check if license plate is in set
+        if licensePlates.Contains(licensePlate) {
+            switch {
+            case now.Hour() < MorningThreshold:
+                fmt.Println(NightMessage)
+            case now.Hour() < AfternoonThreshold:
+                fmt.Println(MorningMessage)
+            case now.Hour() < EveningThreshold:
+                fmt.Println(AfternoonMessage)
+            case now.Hour() < NightThreshold:
+                fmt.Println(EveningMessage)
+            default:
+                fmt.Println(NightMessage)
+            }
+        } else {
+            fmt.Println(AccessDeniedMessage)
+        }
+    }
+    if err != nil && err != io.EOF {
+        exitCode = 1
     }
 }
