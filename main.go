@@ -63,13 +63,13 @@ var (
 
 func init() {
     // parse flags
-    flag.BoolVar(&debug,"-debug", false, "Toggles debug mode")
+    flag.BoolVar(&debug,"debug", false, "Toggles debug mode")
     flag.BoolVar(&debug, "d", false, "Toggles debug mode (shorthand)")
 
-    flag.TextVar(&debugTime,"-debugOffset", time.Time{}, "debug offset")
+    flag.TextVar(&debugTime,"debugOffset", time.Time{}, "debug offset")
     flag.TextVar(&debugTime,"o", time.Time{}, "debug offset (shorthand)")
 
-    flag.BoolVar(&interactive,"-interactive", false, "Toggles interactive mode")
+    flag.BoolVar(&interactive,"interactive", false, "Toggles interactive mode")
     flag.BoolVar(&interactive, "i", false, "Toggles interactive mode (shorthand)")
 
     flag.Parse()
